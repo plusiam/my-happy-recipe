@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마음 비법 레시피 카드 만들기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #resultCard, #resultCard * { visibility: visible; }
+            #resultCard {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 1rem;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-amber-50 flex items-center justify-center min-h-screen p-4 sm:p-6 font-sans">
+
+    <div class="w-full max-w-3xl mx-auto">
+        <div id="mainFormContainer" class="bg-white rounded-2xl shadow-lg p-6 sm:p-10 space-y-8 border-4 border-amber-100">
+            <header class="text-center">
+                <h1 class="text-3xl sm:text-4xl font-bold text-orange-800">마음 비법 레시피 카드 🍳💖</h1>
+                <p class="text-gray-500 mt-2">나를 위한 맛있는 마음 요리를 만들어 보아요!</p>
+            </header>
+
+            <form id="recipeForm" class="space-y-8">
+                <div>
+                    <label for="mindFood" class="text-xl font-semibold text-gray-800 block mb-2">🍲 1. 오늘의 마음 상태는?</label>
+                    <p class="text-sm text-gray-500 mb-3">(예: 시큼한 레몬🍋, 뜨거운 고추장찌개🔥)</p>
+                    <input type="text" id="mindFood" name="mindFood" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent transition" placeholder="내 마음을 음식으로 표현하면...">
+                </div>
+
+                <div>
+                    <label for="reason" class="text-xl font-semibold text-gray-800 block mb-2">🔍 2. 마음이 이렇게 된 이유는?</label>
+                    <textarea id="reason" name="reason" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent transition" placeholder="어떤 일이 있었는지 간단히 적어보아요."></textarea>
+                </div>
+
+                <div>
+                    <label class="text-xl font-semibold text-gray-800 block mb-3">🧂 3. 마음을 다스리는 재료를 모아보자!</label>
+                    <div id="ingredientsContainer" class="space-y-3">
+                        </div>
+                    <button type="button" id="addIngredientBtn" class="mt-3 bg-amber-200 hover:bg-amber-300 text-amber-800 font-bold py-2 px-4 rounded-lg transition-transform duration-200 hover:scale-105">
+                        + 재료 추가하기
+                    </button>
+                </div>
+
+                <div>
+                    <label for="recipeName" class="text-xl font-semibold text-gray-800 block mb-2">🍽️ 4. 나만의 마음 레시피 이름은?</label>
+                    <p class="text-sm text-gray-500 mb-3">(예: 마음 진정 수프, 기분 업! 초코케이크)</p>
+                    <input type="text" id="recipeName" name="recipeName" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent transition" placeholder="나만의 멋진 레시피 이름을 지어주세요!">
+                </div>
+                
+                <div>
+                    <label for="method" class="text-xl font-semibold text-gray-800 block mb-2">✨ 5. 완성된 마음 비법 레시피를 소개해보자!</label>
+                    <textarea id="method" name="method" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent transition" placeholder="레시피 만드는 방법을 자유롭게 적어주세요."></textarea>
+                </div>
+
+                <div>
+                    <label class="text-xl font-semibold text-gray-800 block mb-3">🎨 6. 나의 레시피를 그림으로 표현해보자!</label>
+                    <label for="recipeImage" class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-5 rounded-lg border-2 border-dashed border-gray-300 text-center block transition">
+                        🖼️ 내 컴퓨터에서 그림 파일 선택하기
+                    </label>
+                    <input type="file" id="recipeImage" name="recipeImage" class="hidden" accept="image/*">
+                    <img id="imagePreview" class="mt-4 rounded-lg max-w-xs mx-auto" src="" alt="선택한 그림 미리보기">
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                    <button type="button" id="submitBtn" class="w-full sm:w-2/3 bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 px-6 rounded-lg transition-transform duration-200 hover:scale-105 shadow-md">
+                        나의 레시피 카드 완성!
+                    </button>
+                    <button type="button" id="resetBtn" class="w-full sm:w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg transition-transform duration-200 hover:scale-105 shadow-md">
+                        새로 만들기
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="resultCard" class="hidden">
+            <div id="resultContent" class="bg-white rounded-2xl shadow-lg p-6 sm:p-10 mt-10 border-4 border-dashed border-amber-300 space-y-6"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const recipeForm = document.getElementById('recipeForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const resultCard = document.getElementById('resultCard');
+            const resultContent = document.getElementById('resultContent');
+            const addIngredientBtn = document.getElementById('addIngredientBtn');
+            const ingredientsContainer = document.getElementById('ingredientsContainer');
+            const recipeImageInput = document.getElementById('recipeImage');
+            const imagePreview = document.getElementById('imagePreview');
+
+            // 재료 추가 로직
+            addIngredientBtn.addEventListener('click', () => {
+                const ingredientId = Date.now(); // 고유 ID 생성
+                const newIngredient = document.createElement('div');
+                newIngredient.id = `ingredient-${ingredientId}`;
+                newIngredient.className = 'flex items-center gap-2';
+                newIngredient.innerHTML = `
+                    <input type="text" name="ingredientName" class="flex-1 p-2 border border-gray-300 rounded-md" placeholder="재료 이름 (예: 좋아하는 음악)">
+                    <input type="text" name="ingredientEffect" class="flex-1 p-2 border border-gray-300 rounded-md" placeholder="효과 (예: 기분이 밝아져요)">
+                    <button type="button" class="remove-ingredient-btn bg-red-500 text-white w-8 h-8 rounded-md hover:bg-red-600 font-bold">X</button>
+                `;
+                ingredientsContainer.appendChild(newIngredient);
+            });
+
+            // 재료 삭제 로직 (이벤트 위임)
+            ingredientsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-ingredient-btn')) {
+                    e.target.parentElement.remove();
+                }
+            });
+
+            // 이미지 미리보기 로직
+            recipeImageInput.addEventListener('change', () => {
+                const file = recipeImageInput.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imagePreview.src = e.target.result;
+                        imagePreview.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.src = "";
+                    imagePreview.classList.add('hidden');
+                }
+            });
+
+            // 리셋 버튼 로직
+            resetBtn.addEventListener('click', () => {
+                recipeForm.reset();
+                ingredientsContainer.innerHTML = '';
+                imagePreview.src = '';
+                imagePreview.classList.add('hidden');
+                resultCard.classList.add('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            // 레시피 카드 만들기 버튼 로직
+            submitBtn.addEventListener('click', () => {
+                const formData = new FormData(recipeForm);
+                const data = {};
+                for (let [key, value] of formData.entries()) {
+                    data[key] = value;
+                }
+                
+                const ingredients = Array.from(ingredientsContainer.children).map(row => ({
+                    name: row.querySelector('input[name="ingredientName"]').value,
+                    effect: row.querySelector('input[name="ingredientEffect"]').value
+                })).filter(ing => ing.name); // 이름이 있는 재료만 포함
+
+                if (!data.mindFood || !data.reason || ingredients.length === 0 || !data.recipeName || !data.method) {
+                    alert('빈칸을 모두 채워주세요! 재료는 1개 이상 필요해요. 😊');
+                    return;
+                }
+
+                const ingredientsHtml = ingredients.map(ing => `
+                    <li class="flex items-start">
+                        <span class="font-bold text-orange-600 w-24">${ing.name}:</span>
+                        <span class="flex-1">${ing.effect}</span>
+                    </li>
+                `).join('');
+
+                const imageHtml = imagePreview.src ? `<img src="${imagePreview.src}" alt="나의 레시피 그림" class="my-4 rounded-lg max-w-sm mx-auto shadow-md">` : '';
+
+                resultContent.innerHTML = `
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold text-orange-800">${data.recipeName}</h2>
+                        <p class="text-gray-500 mt-1">나를 위한 특별한 마음 요리</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-semibold text-lg text-amber-700">🍳 오늘의 마음 음식</h3>
+                            <p class="bg-amber-50 p-3 rounded-lg mt-1">${data.mindFood} (이유: ${data.reason})</p>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg text-amber-700">🧂 마음 레시피 재료</h3>
+                            <ul class="bg-amber-50 p-3 rounded-lg mt-1 list-none space-y-2">${ingredientsHtml}</ul>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg text-amber-700">✨ 만드는 방법</h3>
+                            <p class="bg-amber-50 p-3 rounded-lg mt-1 whitespace-pre-wrap">${data.method}</p>
+                        </div>
+                        ${imageHtml ? `<div><h3 class="font-semibold text-lg text-amber-700 text-center">🎨 완성된 나의 요리!</h3>${imageHtml}</div>` : ''}
+                    </div>
+                    <div class="mt-8 text-center no-print">
+                        <button type="button" id="printBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-5 rounded-lg transition-transform duration-200 hover:scale-105 shadow">
+                            🖨️ 인쇄 / PDF로 저장
+                        </button>
+                    </div>
+                `;
+
+                resultCard.classList.remove('hidden');
+                resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                document.getElementById('printBtn')?.addEventListener('click', () => window.print());
+            });
+        });
+    </script>
+</body>
+</html>
