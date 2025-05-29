@@ -3,36 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>마음 비법 레시피 카드 만들기</title>
+    <title>나만의 마음 비법 만들기</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .font-gowun { font-family: 'Gowun Dodum', serif; }
+        .icon-selected {
+            transform: scale(1.25);
+            color: #F59E0B; /* Tailwind amber-500 */
+            text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+        }
+
         @media print {
             body * { visibility: hidden; }
-            #resultCard, #resultCard * { visibility: visible; }
-            #resultCard {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 1rem;
-                border: none !important;
-                box-shadow: none !important;
+            #printableCardArea, #printableCardArea * { visibility: visible; }
+            #printableCardArea {
+                position: absolute; left: 0; top: 0; width: 100%; height: auto;
+                margin: 0; padding: 10mm; 
+                border: none !important; box-shadow: none !important;
             }
-            .no-print { display: none; }
+            #printableCardArea > div { /* 실제 카드 콘텐츠 div */
+                width: 100%; max-width: 190mm; /* A4 용지 폭에 맞춤 */
+                margin: auto;
+                box-shadow: none !important; border: none !important;
+            }
+            .no-print { display: none !important; }
         }
     </style>
 </head>
-<body class="bg-amber-50 flex items-center justify-center min-h-screen p-4 sm:p-6 font-sans">
+<body class="bg-amber-50 flex items-center justify-center min-h-screen p-4 sm:p-6">
 
     <div class="w-full max-w-3xl mx-auto">
         <div id="mainFormContainer" class="bg-white rounded-2xl shadow-lg p-6 sm:p-10 space-y-8 border-4 border-amber-100">
             <header class="text-center">
-                <h1 class="text-3xl sm:text-4xl font-bold text-orange-800">마음 비법 레시피 카드 🍳💖</h1>
-                <p class="text-gray-500 mt-2">나를 위한 맛있는 마음 요리를 만들어 보아요!</p>
+                <h1 class="text-3xl sm:text-4xl font-bold text-orange-800">나만의 마음 비법 만들기 ✨🍳💖</h1>
+                <p class="text-gray-500 mt-2">힘들었던 마음을 다독여주는 나만의 비법을 만들어 보아요!</p>
             </header>
 
-            <form id="recipeForm" class="space-y-8">
+            <form id="mindForm" class="space-y-8">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-amber-50 p-4 rounded-lg">
+                    <div>
+                        <label for="schoolName" class="font-semibold text-gray-800">학교 이름</label>
+                        <input type="text" id="schoolName" name="schoolName" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent transition" placeholder="예: 마음초등학교">
+                    </div>
+                    <div>
+                        <label for="className" class="font-semibold text-gray-800">학년/반</label>
+                        <input type="text" id="className" name="className" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent transition" placeholder="예: 5학년 1반">
+                    </div>
+                    <div>
+                        <label for="studentName" class="font-semibold text-gray-800">이름</label>
+                        <input type="text" id="studentName" name="studentName" class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent transition" placeholder="예: 홍길동">
+                    </div>
+                </div>
+                
                 <div>
                     <label for="mindFood" class="text-xl font-semibold text-gray-800 block mb-2">🍲 1. 오늘의 마음 상태는?</label>
                     <p class="text-sm text-gray-500 mb-3">(예: 시큼한 레몬🍋, 뜨거운 고추장찌개🔥)</p>
@@ -46,8 +73,7 @@
 
                 <div>
                     <label class="text-xl font-semibold text-gray-800 block mb-3">🧂 3. 마음을 다스리는 재료를 모아보자!</label>
-                    <div id="ingredientsContainer" class="space-y-3">
-                        </div>
+                    <div id="ingredientsContainer" class="space-y-3"></div>
                     <button type="button" id="addIngredientBtn" class="mt-3 bg-amber-200 hover:bg-amber-300 text-amber-800 font-bold py-2 px-4 rounded-lg transition-transform duration-200 hover:scale-105">
                         + 재료 추가하기
                     </button>
@@ -66,65 +92,102 @@
 
                 <div>
                     <label class="text-xl font-semibold text-gray-800 block mb-3">🎨 6. 나의 레시피를 그림으로 표현해보자!</label>
-                    <label for="recipeImage" class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-5 rounded-lg border-2 border-dashed border-gray-300 text-center block transition">
+                    <label for="recipeImageUpload" class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-5 rounded-lg border-2 border-dashed border-gray-300 text-center block transition">
                         🖼️ 내 컴퓨터에서 그림 파일 선택하기
                     </label>
-                    <input type="file" id="recipeImage" name="recipeImage" class="hidden" accept="image/*">
-                    <img id="imagePreview" class="mt-4 rounded-lg max-w-xs mx-auto" src="" alt="선택한 그림 미리보기">
+                    <input type="file" id="recipeImageUpload" name="recipeImageUpload" class="hidden" accept="image/*">
+                    <img id="imagePreview" class="hidden mt-4 rounded-lg max-w-xs mx-auto shadow-md" src="#" alt="선택한 그림 미리보기">
                 </div>
 
+                <div>
+                    <label for="usageTime" class="text-xl font-semibold text-gray-800 block mb-2">💖 6. 이 비법을 언제 쓰면 좋을까요?</label> <textarea id="usageTime" name="usageTime" rows="2" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent transition" placeholder="이 비법이 필요한 순간을 적어보세요."></textarea>
+                </div>
+
+
                 <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                    <button type="button" id="submitBtn" class="w-full sm:w-2/3 bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 px-6 rounded-lg transition-transform duration-200 hover:scale-105 shadow-md">
-                        나의 레시피 카드 완성!
+                     <button type="button" id="previewBtn" class="w-full sm:w-2/3 bg-orange-400 hover:bg-orange-500 text-white font-bold py-3 px-6 rounded-lg transition-transform duration-200 hover:scale-105 shadow-md">
+                        ✨ 카드 미리보기 및 완성!
                     </button>
                     <button type="button" id="resetBtn" class="w-full sm:w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg transition-transform duration-200 hover:scale-105 shadow-md">
-                        새로 만들기
+                        🔄 새로 만들기
                     </button>
                 </div>
             </form>
         </div>
 
-        <div id="resultCard" class="hidden">
-            <div id="resultContent" class="bg-white rounded-2xl shadow-lg p-6 sm:p-10 mt-10 border-4 border-dashed border-amber-300 space-y-6"></div>
+        <div id="previewModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 transition-opacity duration-300 no-print">
+            <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl relative max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <button id="closeModalBtn" class="absolute top-3 right-3 bg-gray-100 hover:bg-gray-300 text-gray-700 rounded-full p-1 w-8 h-8 flex items-center justify-center text-2xl font-bold leading-none">&times;</button>
+                <h2 class="text-2xl font-bold text-center text-orange-700 mb-6">미리보기: 나의 마음 비법 카드</h2>
+                <div id="modalCardContentWrapper" class="border-2 border-dashed border-amber-300 rounded-lg p-1 sm:p-2"> 
+                    </div>
+                <div class="mt-6 text-center space-y-3 sm:space-y-0 sm:flex sm:flex-wrap sm:justify-center sm:gap-3">
+                    <button type="button" id="printFromModalBtn" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-5 rounded-lg transition shadow-md">🖨️ 인쇄 / PDF로 저장</button>
+                    <button type="button" id="saveAsImageBtn" class="w-full sm:w-auto bg-sky-500 hover:bg-sky-600 text-white font-bold py-2.5 px-5 rounded-lg transition shadow-md">📷 그림 파일로 저장</button>
+                </div>
+            </div>
         </div>
+        
+        <div id="printableCardArea" class="hidden"></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const recipeForm = document.getElementById('recipeForm');
-            const submitBtn = document.getElementById('submitBtn');
+            const form = document.getElementById('mindForm');
+            const previewBtn = document.getElementById('previewBtn'); // submitBtn -> previewBtn
             const resetBtn = document.getElementById('resetBtn');
-            const resultCard = document.getElementById('resultCard');
-            const resultContent = document.getElementById('resultContent');
-            const addIngredientBtn = document.getElementById('addIngredientBtn');
             const ingredientsContainer = document.getElementById('ingredientsContainer');
-            const recipeImageInput = document.getElementById('recipeImage');
+            const addIngredientBtn = document.getElementById('addIngredientBtn');
+            const recipeImageUpload = document.getElementById('recipeImageUpload'); // ID 수정
             const imagePreview = document.getElementById('imagePreview');
+            
+            const previewModal = document.getElementById('previewModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const printFromModalBtn = document.getElementById('printFromModalBtn');
+            const saveAsImageBtn = document.getElementById('saveAsImageBtn');
+            const modalCardContentWrapper = document.getElementById('modalCardContentWrapper');
+            const printableCardArea = document.getElementById('printableCardArea'); // 인쇄용 영역
 
-            // 재료 추가 로직
+            const iconSelector = document.getElementById('iconSelector'); // 아이콘 선택자
+            const selectedIconInput = document.getElementById('selectedIcon'); // 아이콘 값 저장용 (hidden input)
+            const icons = iconSelector ? iconSelector.querySelectorAll('span') : [];
+
+
+            if (iconSelector && selectedIconInput && icons.length > 0) {
+                icons.forEach(icon => {
+                    icon.addEventListener('click', () => {
+                        icons.forEach(i => i.classList.remove('icon-selected'));
+                        icon.classList.add('icon-selected');
+                        selectedIconInput.value = icon.dataset.icon;
+                    });
+                });
+            } else {
+                // iconSelector 또는 selectedIconInput이 없는 경우 대비 (사용자 코드에 있었으므로 유지)
+                // console.warn("Icon selector elements not found, icon selection feature might not work.");
+            }
+
+
             addIngredientBtn.addEventListener('click', () => {
-                const ingredientId = Date.now(); // 고유 ID 생성
+                const ingredientId = Date.now();
                 const newIngredient = document.createElement('div');
                 newIngredient.id = `ingredient-${ingredientId}`;
-                newIngredient.className = 'flex items-center gap-2';
+                newIngredient.className = 'flex items-center gap-2 mt-2'; // mt-2 추가
                 newIngredient.innerHTML = `
-                    <input type="text" name="ingredientName" class="flex-1 p-2 border border-gray-300 rounded-md" placeholder="재료 이름 (예: 좋아하는 음악)">
-                    <input type="text" name="ingredientEffect" class="flex-1 p-2 border border-gray-300 rounded-md" placeholder="효과 (예: 기분이 밝아져요)">
-                    <button type="button" class="remove-ingredient-btn bg-red-500 text-white w-8 h-8 rounded-md hover:bg-red-600 font-bold">X</button>
+                    <input type="text" name="ingredientName" class="flex-1 p-2 border border-gray-300 rounded-md focus:ring-orange-400" placeholder="재료 이름 (예: 좋아하는 음악)">
+                    <input type="text" name="ingredientEffect" class="flex-1 p-2 border border-gray-300 rounded-md focus:ring-orange-400" placeholder="효과 (예: 기분이 밝아져요)">
+                    <button type="button" class="remove-ingredient-btn bg-red-500 text-white w-8 h-8 rounded-md hover:bg-red-600 font-bold text-sm">X</button>
                 `;
                 ingredientsContainer.appendChild(newIngredient);
             });
 
-            // 재료 삭제 로직 (이벤트 위임)
             ingredientsContainer.addEventListener('click', (e) => {
                 if (e.target.classList.contains('remove-ingredient-btn')) {
                     e.target.parentElement.remove();
                 }
             });
 
-            // 이미지 미리보기 로직
-            recipeImageInput.addEventListener('change', () => {
-                const file = recipeImageInput.files[0];
+            recipeImageUpload.addEventListener('change', () => {
+                const file = recipeImageUpload.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
@@ -138,76 +201,52 @@
                 }
             });
 
-            // 리셋 버튼 로직
             resetBtn.addEventListener('click', () => {
-                recipeForm.reset();
+                form.reset();
                 ingredientsContainer.innerHTML = '';
                 imagePreview.src = '';
                 imagePreview.classList.add('hidden');
-                resultCard.classList.add('hidden');
+                modalCardContentWrapper.innerHTML = '';
+                printableCardArea.innerHTML = '';
+                previewModal.classList.add('hidden');
+                if (icons.length > 0 && selectedIconInput) {
+                    icons.forEach(i => i.classList.remove('icon-selected'));
+                    selectedIconInput.value = '';
+                }
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
 
-            // 레시피 카드 만들기 버튼 로직
-            submitBtn.addEventListener('click', () => {
-                const formData = new FormData(recipeForm);
+            function checkFormValidity() {
+                const formData = new FormData(form);
                 const data = {};
                 for (let [key, value] of formData.entries()) {
                     data[key] = value;
                 }
-                
-                const ingredients = Array.from(ingredientsContainer.children).map(row => ({
+                 // 동적 재료 수집
+                data.ingredients = Array.from(ingredientsContainer.children).map(row => ({
                     name: row.querySelector('input[name="ingredientName"]').value,
                     effect: row.querySelector('input[name="ingredientEffect"]').value
-                })).filter(ing => ing.name); // 이름이 있는 재료만 포함
+                })).filter(ing => ing.name && ing.name.trim());
 
-                if (!data.mindFood || !data.reason || ingredients.length === 0 || !data.recipeName || !data.method) {
-                    alert('빈칸을 모두 채워주세요! 재료는 1개 이상 필요해요. 😊');
-                    return;
+
+                const requiredFields = ['mindFood', 'reason', 'recipeName', 'method', 'usageTime'];
+                if(form.querySelector('input[name="feeling"]:checked')) { // 기분은 선택되었는지 확인
+                    data.feeling = form.querySelector('input[name="feeling"]:checked').value;
+                } else {
+                    requiredFields.push('feeling_not_selected'); // 임의의 값으로 유효성 검사 실패 유도
                 }
-
-                const ingredientsHtml = ingredients.map(ing => `
-                    <li class="flex items-start">
-                        <span class="font-bold text-orange-600 w-24">${ing.name}:</span>
-                        <span class="flex-1">${ing.effect}</span>
-                    </li>
-                `).join('');
-
-                const imageHtml = imagePreview.src ? `<img src="${imagePreview.src}" alt="나의 레시피 그림" class="my-4 rounded-lg max-w-sm mx-auto shadow-md">` : '';
-
-                resultContent.innerHTML = `
-                    <div class="text-center">
-                        <h2 class="text-3xl font-bold text-orange-800">${data.recipeName}</h2>
-                        <p class="text-gray-500 mt-1">나를 위한 특별한 마음 요리</p>
-                    </div>
-                    <div class="space-y-4">
-                        <div>
-                            <h3 class="font-semibold text-lg text-amber-700">🍳 오늘의 마음 음식</h3>
-                            <p class="bg-amber-50 p-3 rounded-lg mt-1">${data.mindFood} (이유: ${data.reason})</p>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-lg text-amber-700">🧂 마음 레시피 재료</h3>
-                            <ul class="bg-amber-50 p-3 rounded-lg mt-1 list-none space-y-2">${ingredientsHtml}</ul>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-lg text-amber-700">✨ 만드는 방법</h3>
-                            <p class="bg-amber-50 p-3 rounded-lg mt-1 whitespace-pre-wrap">${data.method}</p>
-                        </div>
-                        ${imageHtml ? `<div><h3 class="font-semibold text-lg text-amber-700 text-center">🎨 완성된 나의 요리!</h3>${imageHtml}</div>` : ''}
-                    </div>
-                    <div class="mt-8 text-center no-print">
-                        <button type="button" id="printBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-5 rounded-lg transition-transform duration-200 hover:scale-105 shadow">
-                            🖨️ 인쇄 / PDF로 저장
-                        </button>
-                    </div>
-                `;
-
-                resultCard.classList.remove('hidden');
-                resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-                document.getElementById('printBtn')?.addEventListener('click', () => window.print());
-            });
-        });
-    </script>
-</body>
-</html>
+                
+                if (data.feeling === '기타' && (!data.feelingEtc || !data.feelingEtc.trim())) {
+                    alert('기타 감정을 선택하셨으면, 직접 입력해주세요! 😊');
+                    document.getElementById('feelingEtc').focus();
+                    return false;
+                }
+                if (data.ingredients.length === 0) {
+                     alert('재료는 1개 이상 필요해요. 😊');
+                     return false;
+                }
+                // 아이콘 선택 유효성 검사 (사용자 코드에 selectedIcon 필드가 있었으므로 추가)
+                if (selectedIconInput && !selectedIconInput.value) { // selectedIconInput이 존재할때만 체크
+                    alert('아이콘을 선택해주세요! 😊');
+                    return false;
+                }
